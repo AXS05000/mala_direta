@@ -1,8 +1,10 @@
 
 import io
+from calendar import monthrange
 from datetime import date, datetime, timedelta
 
 import openpyxl
+from dateutil.relativedelta import relativedelta
 from django.http import FileResponse
 from reportlab.lib import colors, utils
 from reportlab.lib.pagesizes import landscape, letter
@@ -674,14 +676,59 @@ def gerar_pdf2(funcionario):
 
     # Finalizar a terceira página e começa a 4°.
     p.showPage()
+    folha = Folha_de_Ponto.objects.get(codigo_fc=funcionario.codigo_fc, comp=funcionario.comp)
+    # converter a competência para um objeto datetime
+    competencia_calculo = datetime.strptime(str(folha.comp), "%Y%m")
+    # subtrair um mês da competência
+    competencia_calculo_normal = competencia_calculo
+    competencia_calculo_menos_um = competencia_calculo - relativedelta(months=1)
+
     draw_centered_text(p, 805, f"Folha De Ponto", fontsize=16, fontstyle="bold")
-    folha = Folha_de_Ponto.objects.filter(codigo_fc=funcionario.codigo_fc, comp__in=comp)
 
 
+    # formatar a competência_menos_um como uma string no formato desejado
+    competencia_str = competencia_calculo_menos_um.strftime('%m/%Y')
+    competencia_str_normal = competencia_calculo_normal.strftime('%m/%Y')
 
-    dados_dias = [
-        {"data": f"21/", "dia": "Segunda", "jornada": f"{getattr(folha, '21_m')}", "horas": f"{getattr(folha, '21_h')}", "horas_decimal": f"{getattr(folha, '21_d')}"},
-    ]
+    dados_dias = []
+    dias_do_mes = list(range(21, 32)) + list(range(1, 21)) 
+
+    # Loop por todos os dias do mês
+    for i, dia in enumerate(dias_do_mes):
+        # Se dia for maior ou igual a 10, preenche com zero à esquerda
+        if dia >= 10:
+            dia_str = str(dia).zfill(2)
+        else:
+            dia_str = str(dia)
+
+        # Determina o mês de acordo com o dia do mês (21 a 31: mês anterior, 1 a 20: mês atual)
+        if dia < 21:
+            competencia_str = competencia_str_normal
+            competencia_calculo = competencia_calculo_normal
+            suffix = '_s'
+        else:
+            competencia_str = competencia_str
+            competencia_calculo = competencia_calculo_menos_um
+            suffix = ''
+
+        # Verifica se o dia existe no mês
+        if dia > monthrange(competencia_calculo.year, competencia_calculo.month)[1]:
+            continue
+
+        # Cria um objeto datetime para o dia atual
+        data_atual = datetime(competencia_calculo.year, competencia_calculo.month, dia)
+
+        # Dias da semana: 0 é segunda-feira e 6 é domingo.
+        dia_da_semana = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"][data_atual.weekday()]
+
+        # adiciona os dados do dia à lista
+        dados_dias.append({
+            "data": f"{dia_str}/{competencia_str}", 
+            "dia": dia_da_semana, 
+            "jornada": getattr(folha, f'{dia_str}_m{suffix}'), 
+            "horas": getattr(folha, f'{dia_str}_h{suffix}'), 
+            "horas_decimal": getattr(folha, f'{dia_str}_d{suffix}')
+        })
 
     data = [["Data da marcação", "Dia", "Jornada Considerada", "Horas Trabalhadas", "Horas Trabalhadas em Decimal"]]
     for dia in dados_dias:
@@ -712,18 +759,17 @@ def gerar_pdf2(funcionario):
 
 
 
-    dados_dias = [
-        {"total": "Total HS Trabalhadas:", "horas": "208,32"},
-        {"total": "Total HS Normal:", "horas": "102,32"},
-        {"total": "Total HS 50%:", "horas": "8,32"},
-        {"total": "Total HS 50% NOT:", "horas": "18,22"},
-        {"total": "Total HS 100%:", "horas": "9,76"},
-        {"total": "Total HS 100% NOT:", "horas": "34,21"},
+    dados_dias_2 = [
+        {"total": "Total HS Trabalhadas:", "horas": f"{folha.total_de_horas}"},
+        {"total": "Total HS Normal:", "horas": f"{folha.hs_normais}"},
+        {"total": "Total HS Noturnas:", "horas": f"{folha.hs_noturnas}"},
+        {"total": "Total HS 50%:", "horas": f"{folha.he_50}"},
+        {"total": "Total HS 100%:", "horas": f"{folha.he_100}"},
     
     ]
 
     data = [["Totais", "Horas"]]
-    for dia in dados_dias:
+    for dia in dados_dias_2:
         data.append([dia["total"], dia["horas"]])
 
 
