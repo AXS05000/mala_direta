@@ -677,6 +677,7 @@ def gerar_pdf2(funcionario):
     # Finalizar a terceira página e começa a 4°.
     p.showPage()
     folha = Folha_de_Ponto.objects.get(codigo_fc=funcionario.codigo_fc, comp=funcionario.comp)
+    periodo_apontamento = folha.periodo_apontamento
     # converter a competência para um objeto datetime
     competencia_calculo = datetime.strptime(str(folha.comp), "%Y%m")
     # subtrair um mês da competência
@@ -691,7 +692,11 @@ def gerar_pdf2(funcionario):
     competencia_str_normal = competencia_calculo_normal.strftime('%m/%Y')
 
     dados_dias = []
-    dias_do_mes = list(range(21, 32)) + list(range(1, 21)) 
+    if periodo_apontamento == '21 A 20':
+        dias_do_mes = list(range(21, 32)) + list(range(1, 21)) 
+    elif periodo_apontamento == '01 A 30':
+        dias_do_mes = list(range(1, 32))
+
 
     # Loop por todos os dias do mês
     for i, dia in enumerate(dias_do_mes):
@@ -701,15 +706,21 @@ def gerar_pdf2(funcionario):
         else:
             dia_str = str(dia)
 
-        # Determina o mês de acordo com o dia do mês (21 a 31: mês anterior, 1 a 20: mês atual)
-        if dia < 21:
+    # Determina o mês de acordo com o dia do mês (21 a 31: mês anterior, 1 a 20: mês atual)
+        if periodo_apontamento == '21 A 20':
+            if dia < 21:
+                competencia_str = competencia_str_normal
+                competencia_calculo = competencia_calculo_normal
+                suffix = '_s'
+            else:
+                competencia_str = competencia_str
+                competencia_calculo = competencia_calculo_menos_um
+                suffix = ''
+        elif periodo_apontamento == '01 A 30':
             competencia_str = competencia_str_normal
             competencia_calculo = competencia_calculo_normal
             suffix = '_s'
-        else:
-            competencia_str = competencia_str
-            competencia_calculo = competencia_calculo_menos_um
-            suffix = ''
+
 
         # Verifica se o dia existe no mês
         if dia > monthrange(competencia_calculo.year, competencia_calculo.month)[1]:
