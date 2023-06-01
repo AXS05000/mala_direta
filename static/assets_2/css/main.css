@@ -76,6 +76,10 @@ a:not([href]):not([tabindex]):focus, a:not([href]):not([tabindex]):hover {
   background: #f39c12 !important;
 }
 
+.brand-logo {
+  content: var(--brand-image);
+}
+
 /* ==========================================================================
    2.1 Section Title
    ========================================================================== */
