@@ -27,6 +27,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['go2b-bi.com.br', 'www.go2b-bi.com.br']
 
+#ALLOWED_HOSTS = ['*']
 
 # Application definition
 
