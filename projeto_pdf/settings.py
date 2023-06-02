@@ -50,6 +50,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'csp.middleware.CSPMiddleware',
 ]
 
 ROOT_URLCONF = 'projeto_pdf.urls'
@@ -158,3 +159,6 @@ CSRF_COOKIE_HTTPNLY = True
 X_FRAME_OPTIONS = 'DENY'
 
 SECURE_SSL_REDIRECT = True
+
+CSP_SCRIPT_SRC = ("'self'",)
+CSP_DEFAULT_SRC = ("'self'", )
