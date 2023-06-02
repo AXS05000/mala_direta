@@ -161,4 +161,4 @@ X_FRAME_OPTIONS = 'DENY'
 SECURE_SSL_REDIRECT = True
 
 CSP_SCRIPT_SRC = ("'self'",)
-CSP_DEFAULT_SRC = ("'self'", )
+
