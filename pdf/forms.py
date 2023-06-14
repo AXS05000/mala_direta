@@ -12,3 +12,7 @@ class SelecionarFuncionarioForm(forms.Form):
 
     codigo_fc = forms.IntegerField()
     comp = forms.IntegerField()
+
+
+class DeleteCompForm(forms.Form):
+    comp = forms.IntegerField()

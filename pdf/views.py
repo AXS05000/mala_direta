@@ -4,10 +4,22 @@ from django.shortcuts import redirect, render
 from django.urls import path
 
 from . import views
-from .forms import SelecionarFuncionarioForm
-from .models import Funcionario
+from .forms import DeleteCompForm, SelecionarFuncionarioForm
+from .models import Beneficios_Mala, Funcionario
 from .utils import gerar_pdf, importar_excel
 from .utils2 import gerar_pdf2, importar_excel_beneficios, importar_excel_folha
+
+
+@login_required(login_url='/login/')
+def delete_comp_view(request):
+    if request.method == 'POST':
+        form = DeleteCompForm(request.POST)
+        if form.is_valid():
+            comp = form.cleaned_data['comp']
+            Beneficios_Mala.objects.filter(comp=comp).delete()
+    else:
+        form = DeleteCompForm()
+    return render(request, 'pdf/delete_comp.html', {'form': form})
 
 
 @login_required(login_url='/login/')
