@@ -83,3 +83,10 @@ def gerar_pdf_direto(request, codigo_fc, comp):
         return gerar_pdf(funcionario)
     except Funcionario.DoesNotExist:
         raise Http404('Funcionário não encontrado para a matrícula e competência informadas.')
+    
+def gerar_pdf_direto2(request, codigo_fc, comp):
+    try:
+        funcionario = Funcionario.objects.get(codigo_fc=codigo_fc, comp=comp)
+        return gerar_pdf2(funcionario)
+    except Funcionario.DoesNotExist:
+        raise Http404('Funcionário não encontrado para a matrícula e competência informadas.')
