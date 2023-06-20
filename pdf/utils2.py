@@ -263,6 +263,7 @@ def gerar_pdf2(funcionario):
     # Desenhe as informações do funcionário no PDF
     draw_centered_text(p, 750, f"EXTRATO SIMPLES - POR COLABORADOR – FATO GERADOR", fontsize=10, fontstyle="bold")
     draw_centered_text(p, 700, f"COMPETÊNCIA: {funcionario.comp}", fontsize=10, fontstyle="bold")
+    draw_centered_text(p, 675, f"Contrato: {funcionario.cto}")
     draw_centered_text(p, 650, f"Matrícula: {funcionario.codigo_fc}")
     draw_centered_text(p, 625, f"Nome: {funcionario.nome}")
     draw_centered_text(p, 600, f"Cargo: {funcionario.cargo}")
