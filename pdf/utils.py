@@ -112,6 +112,11 @@ def importar_excel(arquivo):
                 'aut_4': row[91],
                 'liquido_5': row[92],
                 'aut_5': row[93],
+                'data_1': row[94],
+                'data_2': row[95],
+                'data_3': row[96],
+                'data_4': row[97],
+                'data_5': row[98],
             }
         else:
             defaults = {}
@@ -301,6 +306,17 @@ def importar_excel(arquivo):
                 defaults['liquido_5'] = row[92]
             if row[93] is not None:
                 defaults['aut_5'] = row[93]
+            if row[94] is not None:
+                defaults['data_1'] = row[94]
+            if row[95] is not None:
+                defaults['data_2'] = row[95]
+            if row[96] is not None:
+                defaults['data_3'] = row[96]
+            if row[97] is not None:
+                defaults['data_4'] = row[97]
+            if row[98] is not None:
+                defaults['data_5'] = row[98]
+
 
             for field, value in defaults.items():
                 setattr(funcionario, field, value)

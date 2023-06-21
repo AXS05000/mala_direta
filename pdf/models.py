@@ -95,6 +95,13 @@ class Funcionario(models.Model):
     aut_4 = models.CharField('AUT 4', max_length=100)
     liquido_5 = models.CharField('LIQUIDO 5', max_length=100)
     aut_5 = models.CharField('AUT 5', max_length=100)
+    data_1 = models.CharField('DATA 1', max_length=100)
+    data_2 = models.CharField('DATA 2', max_length=100)
+    data_3 = models.CharField('DATA 3', max_length=100)
+    data_4 = models.CharField('DATA 4', max_length=100)
+    data_5 = models.CharField('DATA 5', max_length=100)
+
+
 
     class Meta:
         ordering = ['comp', 'codigo_fc']
