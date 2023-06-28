@@ -574,7 +574,7 @@ def gerar_pdf(funcionario):
         ('FONTSIZE', (0, 1), (-1, -1), 6),
         ('BOX', (0, 0), (-1, -1), 1, colors.black),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 6),  #Espaçemnto da primeira linha.
-        ('BOTTOMPADDING', (0, 1), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
         ('LINEABOVE', (0, 1), (-1, 1), 1, colors.black),  # Adicionado
     ]))
 
@@ -601,7 +601,7 @@ def gerar_pdf(funcionario):
     # Aqui mexe na altura de onde fica na pagina.
     rect_y = -714
     # Altura do retangulo
-    rect_height = 90
+    rect_height = 76
     p.roundRect(rect_x, rect_y + 750, table_width, rect_height, 1, stroke=1, fill=0)
 
 #################################
@@ -627,7 +627,7 @@ def gerar_pdf(funcionario):
     # Aqui mexe na altura de onde fica na pagina.
     rect_y3 = -714
     # Altura do retangulo
-    rect_height3 = 90
+    rect_height3 = 76
     p.roundRect(rect_x3, rect_y3 + 750, table_width3, rect_height3, 0, stroke=1, fill=0)
 
 #################################
@@ -645,14 +645,14 @@ def gerar_pdf(funcionario):
     # Aqui mexe na altura de onde fica na pagina.
     rect_y3 = -674
     # Altura do retangulo
-    rect_height3 = 50
+    rect_height3 = 36
     p.roundRect(rect_x3, rect_y3 + 750, table_width3, rect_height3, 0, stroke=1, fill=0)
 
 ########################################################################################################
-    p.drawString(rect_x + 300 + 10, rect_y + 750 + 70, f"Total Vencimentos:")
-    p.drawString(rect_x + 300 + 20, rect_y + 750 + 55, f"R$ {funcionario.vencimentos}")
-    p.drawString(rect_x + 445 + 10, rect_y + 750 + 70, f"Total Descontos:")
-    p.drawString(rect_x + 445 + 20, rect_y + 750 + 55, f"R$ {funcionario.descontos}")
+    p.drawString(rect_x + 300 + 10, rect_y + 750 + 65, f"Total Vencimentos:")
+    p.drawString(rect_x + 300 + 20, rect_y + 750 + 50, f"R$ {funcionario.vencimentos}")
+    p.drawString(rect_x + 445 + 10, rect_y + 750 + 65, f"Total Descontos:")
+    p.drawString(rect_x + 445 + 20, rect_y + 750 + 50, f"R$ {funcionario.descontos}")
     p.drawString(rect_x + 350, rect_y + 750 + 20, f"Valor Líquido ==== R$ {funcionario.liquido}")
     p.drawString(rect_x + 25, rect_y + 750 + 22, f"__________________________________")
     p.drawString(rect_x + 25, rect_y + 750 + 10, f"Declaro ter recebido a importância líquida discriminada neste recibo")
