@@ -117,6 +117,8 @@ def importar_excel(arquivo):
                 'data_3': row[96],
                 'data_4': row[97],
                 'data_5': row[98],
+                'qtde_dsr_feriado': row[99],
+                'dsr_feriado': row[100],
             }
         else:
             defaults = {}
@@ -316,6 +318,10 @@ def importar_excel(arquivo):
                 defaults['data_4'] = row[97]
             if row[98] is not None:
                 defaults['data_5'] = row[98]
+            if row[99] is not None:
+                defaults['qtde_dsr_feriado'] = row[99]
+            if row[100] is not None:
+                defaults['dsr_feriado'] = row[100]
 
 
             for field, value in defaults.items():
@@ -505,6 +511,7 @@ def gerar_pdf(funcionario):
         ['Cód. Descrição', 'Referência', 'Vencimentos', 'Descontos'],
         ['HORAS NORMAIS', f"{funcionario.qtde_hs_normais}", f"{funcionario.horas_normais}", ' '],
         ['D.S.R. S/HORAS NORMAL', ' ', f"{funcionario.dsr_s_horas_normal}", ' '],
+        ['D.S.R. FERIADO', f"{funcionario.qtde_dsr_feriado}", f"{funcionario.dsr_feriado}", ' '],
         ['HORA EXTRA 100% / HORA EXTRA 100% NOT', f"{funcionario.qtde_he_100} / {funcionario.qtde_he_100_not}", f"{funcionario.hora_extra_100} / {funcionario.hora_extra_100_noturno}", ' '],
         ['D.S.R. S/HORA EXTRA 100%', ' ', f"{funcionario.dsr_s_hora_extra_100}", ' '],
         ['HORA EXTRA 50% / HORA EXTRA 50% NOT', f"{funcionario.qtde_he_50} / {funcionario.qtde_he_50_not}", f"{funcionario.hora_extra_50} / {funcionario.hora_extra_50_noturno}", ' '],
@@ -542,7 +549,6 @@ def gerar_pdf(funcionario):
         ['DESC. VALE-TRANSPORTE NAO UTILIZADO', ' ', ' ', f"{funcionario.desc_vale_transporte_nao_utilizado}"],
         ['DESC. VALE-TRANSPORTE', ' ', ' ', f"{funcionario.desc_vale_transporte}"],
         ['DESC. SALDO NEGATIVO', ' ', ' ', f"{funcionario.desc_saldo_negativo}"],
-        [' ', ' ', ' ', ' '],
         [' ', ' ', ' ', ' '],
         [' ', ' ', ' ', ' '],
         [' ', ' ', ' ', ' '],

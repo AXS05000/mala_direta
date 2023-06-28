@@ -100,6 +100,8 @@ class Funcionario(models.Model):
     data_3 = models.CharField('DATA 3', max_length=100)
     data_4 = models.CharField('DATA 4', max_length=100)
     data_5 = models.CharField('DATA 5', max_length=100)
+    qtde_dsr_feriado = models.CharField('QTDE D.S.R FERIADO', max_length=100)
+    dsr_feriado = models.CharField('D.S.R. FERIADO', max_length=100)
 
 
 
