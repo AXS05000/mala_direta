@@ -574,7 +574,7 @@ def gerar_pdf(funcionario):
         ('FONTSIZE', (0, 1), (-1, -1), 6),
         ('BOX', (0, 0), (-1, -1), 1, colors.black),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 6),  #Espaçemnto da primeira linha.
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 0),
         ('LINEABOVE', (0, 1), (-1, 1), 1, colors.black),  # Adicionado
     ]))
 
