@@ -5,6 +5,7 @@ from datetime import date, datetime, timedelta
 
 import openpyxl
 from dateutil.relativedelta import relativedelta
+from django.core.paginator import Paginator
 from django.http import FileResponse
 from reportlab.lib import colors, utils
 from reportlab.lib.pagesizes import landscape, letter
@@ -12,29 +13,6 @@ from reportlab.pdfgen import canvas
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 
 from .models import Beneficios_Mala, Folha_de_Ponto, Funcionario
-
-
-def importar_excel_beneficios(arquivo):
-    workbook = openpyxl.load_workbook(arquivo)
-    sheet = workbook.active
-
-    for row in sheet.iter_rows(min_row=2, values_only=True):
-        Beneficios_Mala.objects.update_or_create(
-            id=row[0],
-            defaults={
-                'comp': row[1],
-                'codigo': row[2],
-                'codigo_fc': row[3],
-                'aut': row[4],
-                'data_inicio': row[5],
-                'data_fim': row[6],
-                'dias_calculados': row[7],
-                'tipo_de_beneficio': row[8],
-                'valor_pago': row[9],
-                'data_de_pagamento': row[10],
-            }
-        )
-
 
 
 def importar_excel_folha(arquivo):

@@ -41,20 +41,23 @@
                 <a class="nav-link page-scroll" href="#slider-area">Home</a>
               </li>
               <li class="nav-item">
-                <a class="nav-link page-scroll" href="#services">Serviços</a>
-              </li>  
+                <a class="nav-link page-scroll" href="{% url 'gerar-csv' %}">Notas Fiscais</a>
+              </li>                             
               <li class="nav-item">
-                <a class="nav-link page-scroll" href="#features">Características</a>
-              </li>                            
-              <li class="nav-item">
-                <a class="nav-link page-scroll" href="#portfolios">Trabalhos</a>
+                <a class="nav-link page-scroll" href="{% url 'notasficais' %}">Notas Portal</a>
               </li>            
               <li class="nav-item">
-                <a class="nav-link page-scroll" href="#team">Time</a>
-              </li>    
-              <li class="nav-item">
-                <a class="nav-link page-scroll" href="#contact">Contato</a>
+                <a class="nav-link page-scroll" href="{% url 'search_collaborator' %}">Candidatos</a>
               </li>
+              <li class="nav-item">
+                <a class="nav-link page-scroll" href="{% url 'admissao' %}">Admissão</a>
+              </li>
+              {% if user.is_super_user %}
+              {% else %}
+              <li class="nav-item">
+                <a class="nav-link page-scroll" href="{% url 'upload_template' %}">Importar Template</a>
+              </li>
+              {% endif %} 
               {% if user.is_anonymous %}
               {% else %}
               <li class="nav-item">
