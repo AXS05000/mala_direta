@@ -543,9 +543,9 @@ def gerar_pdf2(funcionario):
     beneficios = Beneficios_Mala.objects.filter(codigo_fc=funcionario.codigo_fc, comp__in=comps_adjacentes)
 
 
-    vt_beneficios = beneficios.filter(tipo_de_beneficio='VT')
-    vr_beneficios = beneficios.filter(tipo_de_beneficio='VR/VA')
-    cesta_beneficios = beneficios.filter(tipo_de_beneficio='CESTA')
+    vt_beneficios = beneficios.filter(tipo_de_beneficio='VT').order_by('data_de_pagamento')
+    vr_beneficios = beneficios.filter(tipo_de_beneficio='VR/VA').order_by('data_de_pagamento')
+    cesta_beneficios = beneficios.filter(tipo_de_beneficio='CESTA').order_by('data_de_pagamento')
 
 
 
