@@ -26,7 +26,7 @@ app.conf.beat_schedule = {
         'task': 'notas.tasks.task_atualizar_notas',
         'schedule': crontab(minute=0),
     },
-    # Aqui você pode adicionar mais tarefas periódicas conforme necessário Parar se atualizar de 5 minutos:  ######'schedule': crontab(minute='*/5'),###### 'schedule': crontab(minute=0),
+    # Aqui você pode adicionar mais tarefas periódicas conforme necessário Parar se atualizar de 5 minutos:  'schedule': crontab(minute='*/5'),
 }
 
 
