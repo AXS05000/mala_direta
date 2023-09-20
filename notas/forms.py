@@ -2,20 +2,27 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.core.mail.message import EmailMessage
 
-from .models import BaseCNPJ, Notas
+from .models import BaseCNPJ, BaseInfoContratos, Notas
 
 
 class NotasModelForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
         for field in self.Meta.required:
             self.fields[field].required = True
 
+        # Filtrar apenas contratos ativos
+        self.fields['baseinfocontratos'].queryset = BaseInfoContratos.objects.filter(contrato_ativo=True)
+        
+        # O mesmo para os demais campos
+        for i in range(2, 9):
+            self.fields[f'baseinfocontratos{i}'].queryset = BaseInfoContratos.objects.filter(contrato_ativo=True)
+
+
     class Meta:
         model = Notas
-        fields = ['baseinfocontratos', 'cnpj_da_nota', 'competencia_nota', 'tipo_de_faturamento', 'porcentagem_ans','competencia_nota_ans', 'quantidade_hora','baseinfocontratos2', 'quantidade_hora2','baseinfocontratos3', 'quantidade_hora3','baseinfocontratos4', 'quantidade_hora4','baseinfocontratos5', 'quantidade_hora5','baseinfocontratos6', 'quantidade_hora6','baseinfocontratos7', 'quantidade_hora7','baseinfocontratos8', 'quantidade_hora8','texto_livre','total_valor_outros', 'contrato_texto_livre']
+        fields = ['baseinfocontratos', 'cnpj_da_nota', 'competencia_nota', 'texto_livre', 'tipo_de_faturamento', 'porcentagem_ans','competencia_nota_ans', 'quantidade_hora','baseinfocontratos2', 'quantidade_hora2','baseinfocontratos3', 'quantidade_hora3','baseinfocontratos4', 'quantidade_hora4','baseinfocontratos5', 'quantidade_hora5','baseinfocontratos6', 'quantidade_hora6','baseinfocontratos7', 'quantidade_hora7','baseinfocontratos8', 'quantidade_hora8','texto_livre','total_valor_outros', 'contrato_texto_livre']
         required = ['competencia_nota', 'tipo_de_faturamento', 'cnpj_da_nota']
         error_messages = {
             'porcentagem_ans': {

@@ -1,3 +1,5 @@
+from decimal import ROUND_DOWN, Decimal
+
 from django.db import models
 
 # Create your models here.
@@ -57,7 +59,7 @@ class BaseCNPJ(models.Model):
     cep = models.CharField('Cep', max_length=8)
     nome_cliente = models.CharField('Nome Cliente', max_length=50)
     tipo_de_servico = models.CharField('Tipo de Serviço', max_length=5)
-    iss = models.DecimalField('ISS', max_digits=4, decimal_places=2)
+    iss = models.DecimalField('ISS', max_digits=4, decimal_places=4)
     unidade = models.CharField('Unidade', max_length=55)
     mcu = models.CharField('MCU', max_length=15)
     tipo_de_cliente = models.CharField(
@@ -88,7 +90,7 @@ class Notas(models.Model):
     data_de_modificacao = models.DateField(
         'Data de Modificação', auto_now=True)
     baseinfocontratos = models.ForeignKey(
-        BaseInfoContratos, on_delete=models.SET_NULL, null=True, blank=True, limit_choices_to={'contrato_ativo': True}
+        BaseInfoContratos, on_delete=models.SET_NULL, null=True, blank=True
     )
     competencia_nota = models.ForeignKey(
         Competencias, on_delete=models.SET_NULL, null=True
@@ -99,43 +101,43 @@ class Notas(models.Model):
         'Quantidade de Horas', max_digits=10, decimal_places=4, null=True, blank=True)
 
     baseinfocontratos2 = models.ForeignKey(
-        BaseInfoContratos, on_delete=models.SET_NULL, null=True, blank=True, related_name='cargo_2', limit_choices_to={'contrato_ativo': True}
+        BaseInfoContratos, on_delete=models.SET_NULL, null=True, blank=True, related_name='cargo_2'
     )
     quantidade_hora2 = models.DecimalField(
         'Quantidade de Horas 2', max_digits=10, decimal_places=4, null=True, blank=True)
 
     baseinfocontratos3 = models.ForeignKey(
-        BaseInfoContratos, on_delete=models.SET_NULL, null=True, blank=True, related_name='cargo_3', limit_choices_to={'contrato_ativo': True}
+        BaseInfoContratos, on_delete=models.SET_NULL, null=True, blank=True, related_name='cargo_3'
     )
     quantidade_hora3 = models.DecimalField(
         'Quantidade de Horas 3', max_digits=10, decimal_places=4, null=True, blank=True)
 
     baseinfocontratos4 = models.ForeignKey(
-        BaseInfoContratos, on_delete=models.SET_NULL, null=True, blank=True, related_name='cargo_4', limit_choices_to={'contrato_ativo': True}
+        BaseInfoContratos, on_delete=models.SET_NULL, null=True, blank=True, related_name='cargo_4'
     )
     quantidade_hora4 = models.DecimalField(
         'Quantidade de Horas 4', max_digits=10, decimal_places=4, null=True, blank=True)
 
     baseinfocontratos5 = models.ForeignKey(
-        BaseInfoContratos, on_delete=models.SET_NULL, null=True, blank=True, related_name='cargo_5', limit_choices_to={'contrato_ativo': True}
+        BaseInfoContratos, on_delete=models.SET_NULL, null=True, blank=True, related_name='cargo_5'
     )
     quantidade_hora5 = models.DecimalField(
         'Quantidade de Horas 5', max_digits=10, decimal_places=4, null=True, blank=True)
 
     baseinfocontratos6 = models.ForeignKey(
-        BaseInfoContratos, on_delete=models.SET_NULL, null=True, blank=True, related_name='cargo_6', limit_choices_to={'contrato_ativo': True}
+        BaseInfoContratos, on_delete=models.SET_NULL, null=True, blank=True, related_name='cargo_6'
     )
     quantidade_hora6 = models.DecimalField(
         'Quantidade de Horas 6', max_digits=10, decimal_places=4, null=True, blank=True)
 
     baseinfocontratos7 = models.ForeignKey(
-        BaseInfoContratos, on_delete=models.SET_NULL, null=True, blank=True, related_name='cargo_7', limit_choices_to={'contrato_ativo': True}
+        BaseInfoContratos, on_delete=models.SET_NULL, null=True, blank=True, related_name='cargo_7'
     )
     quantidade_hora7 = models.DecimalField(
         'Quantidade de Horas 7', max_digits=10, decimal_places=4, null=True, blank=True)
 
     baseinfocontratos8 = models.ForeignKey(
-        BaseInfoContratos, on_delete=models.SET_NULL, null=True, blank=True, related_name='cargo_8', limit_choices_to={'contrato_ativo': True}
+        BaseInfoContratos, on_delete=models.SET_NULL, null=True, blank=True, related_name='cargo_8'
     )
     quantidade_hora8 = models.DecimalField(
         'Quantidade de Horas 8', max_digits=10, decimal_places=4, null=True, blank=True)
@@ -178,17 +180,17 @@ class Notas(models.Model):
     
     @property
     def total_a_faturar(self):
-        total = 0
+        total = Decimal('0.00')
         # Para baseinfocontratos sem número, ou seja, a primeira instância
         if self.baseinfocontratos and self.quantidade_hora:
-            total += self.baseinfocontratos.valor_hora * self.quantidade_hora
+            total += Decimal(str(self.baseinfocontratos.valor_hora)) * Decimal(str(self.quantidade_hora))
         # Para baseinfocontratos2 até baseinfocontratos8
         for i in range(2, 9):
             quantidade_hora = getattr(self, f'quantidade_hora{i}', 0)
             baseinfocontratos = getattr(self, f'baseinfocontratos{i}', None)
             if quantidade_hora and baseinfocontratos:
-                total += quantidade_hora * baseinfocontratos.valor_hora
-        return total
+                total += Decimal(str(quantidade_hora)) * Decimal(str(baseinfocontratos.valor_hora))
+        return total.quantize(Decimal('0.0000'), rounding=ROUND_DOWN)
 
 
 
