@@ -2,6 +2,8 @@ from decimal import ROUND_DOWN, Decimal
 
 from django.db import models
 
+from .formulas import truncate_decimal
+
 # Create your models here.
 
 class BaseInfoContratos(models.Model):
@@ -92,6 +94,7 @@ class Notas(models.Model):
     baseinfocontratos = models.ForeignKey(
         BaseInfoContratos, on_delete=models.SET_NULL, null=True, blank=True
     )
+    nota_cancelada = models.BooleanField('Nota Cancelada?')
     competencia_nota = models.ForeignKey(
         Competencias, on_delete=models.SET_NULL, null=True
     )
@@ -177,7 +180,7 @@ class Notas(models.Model):
             if quantidade_hora and baseinfocontratos:
                 total += quantidade_hora * baseinfocontratos.valor_hora
         return int(total * 100)
-    
+
     @property
     def total_a_faturar(self):
         total = Decimal('0.00')
@@ -190,7 +193,7 @@ class Notas(models.Model):
             baseinfocontratos = getattr(self, f'baseinfocontratos{i}', None)
             if quantidade_hora and baseinfocontratos:
                 total += Decimal(str(quantidade_hora)) * Decimal(str(baseinfocontratos.valor_hora))
-        return total.quantize(Decimal('0.0000'), rounding=ROUND_DOWN)
+        return truncate_decimal(total, 2)
 
 
 

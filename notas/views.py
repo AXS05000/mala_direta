@@ -16,6 +16,7 @@ from django.views.generic import CreateView, ListView
 from zeep import Client
 
 from .forms import BaseCNPJModelForm, NotasModelForm
+from .formulas import truncate_decimal
 from .models import NotaFiscal2, Notas, NumeradorLote
 from .tasks import import_basecnpj_from_excel, import_baseinfo_from_excel
 from .utils import update_basecnpj_from_excel
@@ -80,8 +81,21 @@ class GerarcsvTemplateView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
+        notas = context['object_list']
+        
+        # Adicione números de NotaFiscal2 correspondentes às Notas
+        for nota in notas:
+            try:
+                nota_fiscal = NotaFiscal2.objects.get(numero_recibo=nota.id)
+                nota.numero_nota_fiscal = nota_fiscal.numero
+                nota.link_nfe = nota_fiscal.link_nfe  # Adicionar link da NotaFiscal2
+            except NotaFiscal2.DoesNotExist:
+                nota.numero_nota_fiscal = "Não Emitido"
+                nota.link_nfe = None 
+
         context['q'] = self.request.GET.get('q', '')
-        context['order_by'] = self.request.GET.get('order_by', '-data_de_criacao')
+        context['order_by'] = self.request.GET.get('order_by', 'id')
         page_obj = context['page_obj']
 
         # Obtém o número da página atual
@@ -110,17 +124,22 @@ class GerarcsvTemplateView(ListView):
 
     def get_queryset(self):
         query = self.request.GET.get('q')
-        order_by = self.request.GET.get('order_by', '-data_de_criacao')
+        order_by = self.request.GET.get('order_by', '-id')
+        
+        # Filtrar por notas que não foram canceladas
+        base_query = Notas.objects.filter(nota_cancelada=False)
+        
         if query:
             try:
                 date_query = datetime.strptime(query, '%d/%m/%Y').date()  # Ajustando o formato aqui
-                return Notas.objects.filter(Q(data_de_criacao=date_query)).order_by(order_by)
+                return base_query.filter(data_de_criacao=date_query).order_by(order_by)
             except ValueError:  # Captura a exceção se a data for inválida
                 # Aqui você pode lidar com a situação onde a data é inválida, por exemplo, verificando se 'q' corresponde a uma unidade ou nome de cliente
-                notas_by_unidade = Notas.objects.filter(cnpj_da_nota__unidade__icontains=query).order_by(order_by)
-                notas_by_nome_cliente = Notas.objects.filter(cnpj_da_nota__nome_cliente__icontains=query).order_by(order_by)
+                notas_by_unidade = base_query.filter(cnpj_da_nota__unidade__icontains=query).order_by(order_by)
+                notas_by_nome_cliente = base_query.filter(cnpj_da_nota__nome_cliente__icontains=query).order_by(order_by)
                 return (notas_by_unidade | notas_by_nome_cliente)  # Retorna a união dos dois conjuntos de notas
-        return Notas.objects.all().order_by(order_by)
+                
+        return base_query.order_by(order_by)
     
 
 
@@ -602,6 +621,7 @@ def generate_csv(request):
 
     def generate_description(nota):
         
+        
         descricao = ""
         if nota.porcentagem_ans is not None and nota.total_valor_outros is None:
             total_a_faturar_nota = round(nota.total_a_faturar - (nota.total_a_faturar * nota.porcentagem_ans) , 2)
@@ -632,7 +652,7 @@ def generate_csv(request):
                 baseinfocontratos = getattr(nota, baseinfocontratos_field)
                 quantidade_hora = getattr(nota, quantidade_hora_field)
                 if baseinfocontratos and quantidade_hora:
-                    total_bruto_cargo = round(baseinfocontratos.valor_hora * Decimal(str(quantidade_hora)), 2)
+                    total_bruto_cargo = truncate_decimal(baseinfocontratos.valor_hora * Decimal(str(quantidade_hora)), 2)
                     total_bruto_cargo = str(total_bruto_cargo).replace('.', ',')  # substitui o ponto por vírgula
                     descricao += f"CARGO: {baseinfocontratos.cargo} - QTD HS: {round(Decimal(str(quantidade_hora)), 2)}- VALOR HORA: R${baseinfocontratos.valor_hora} TOTAL BRUTO CARGO: R$ {total_bruto_cargo}|"
             descricao += f"||TOTAL A FATURAR: R$ {format(total_a_faturar_nota, '.2f').replace('.', ',')}|BASE PARA RETENCOES:|RETENCAO CONFORME LEI 10833/03 - PIS: 0,0065: R$ {format(round(base_pis, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 10833/03 - CONFINS: 0,03: R$ {format(round(base_confins, 2), '2f').replace('.', ',')}|INSS RETENCAO: 0,11: R$ {format(round(base_inss, 2), '2f').replace('.', ',')}|I.R. RETENCAO: 0,048: R$ {format(round(base_ir, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 10833/03 - CSLL: 0,01: R$ {format(round(base_cssl, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 116/03 - ISS: {format(round(nota.cnpj_da_nota.iss, 2), '2f').replace('.', ',')}: R${format(round(base_iss, 2), '2f').replace('.', ',')}|TOTAL LIQUIDO A RECEBER: R$ {format(total_liquido_descricao, '.2f').replace('.', ',')}|"
@@ -644,7 +664,7 @@ def generate_csv(request):
                 baseinfocontratos = getattr(nota, baseinfocontratos_field)
                 quantidade_hora = getattr(nota, quantidade_hora_field)
                 if baseinfocontratos and quantidade_hora:
-                    total_bruto_cargo = round(baseinfocontratos.valor_hora * Decimal(str(quantidade_hora)), 2)
+                    total_bruto_cargo = truncate_decimal(baseinfocontratos.valor_hora * Decimal(str(quantidade_hora)), 2)
                     total_bruto_cargo = str(total_bruto_cargo).replace('.', ',')  # substitui o ponto por vírgula
                     descricao += f"CARGO: {baseinfocontratos.cargo} - QTD HS: {round(Decimal(str(quantidade_hora)), 2)}- VALOR HORA: R${baseinfocontratos.valor_hora}|TOTAL BRUTO CARGO: R$ {total_bruto_cargo}| TX ADM / Lucro: {nota.cnpj_da_nota.tx_adm}% - R$ {base_txadm} (Base ISS)|"
             descricao += f"||TOTAL A FATURAR: R$ {format(total_a_faturar_nota, '.2f').replace('.', ',')}|BASE PARA RETENCOES:|RETENCAO CONFORME LEI 10833/03 - PIS: 0,0065: R$ {format(round(base_pis, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 10833/03 - CONFINS: 0,03: R$ {format(round(base_confins, 2), '2f').replace('.', ',')}|INSS RETENCAO: 0,11: R$ {format(round(base_inss, 2), '2f').replace('.', ',')}|I.R. RETENCAO: 0,048: R$ {format(round(base_ir, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 10833/03 - CSLL: 0,01: R$ {format(round(base_cssl, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 116/03 - ISS: {format(round(nota.cnpj_da_nota.iss, 2), '2f').replace('.', ',')}: R${format(round(base_iss, 2), '2f').replace('.', ',')}|TOTAL LIQUIDO A RECEBER: R$ {format(total_liquido_descricao, '.2f').replace('.', ',')}|"
@@ -658,7 +678,7 @@ def generate_csv(request):
                 baseinfocontratos = getattr(nota, baseinfocontratos_field)
                 quantidade_hora = getattr(nota, quantidade_hora_field)
                 if baseinfocontratos and quantidade_hora:
-                    total_bruto_cargo = round(baseinfocontratos.valor_hora * Decimal(str(quantidade_hora)), 2)
+                    total_bruto_cargo = truncate_decimal(baseinfocontratos.valor_hora * Decimal(str(quantidade_hora)), 2)
                     total_bruto_cargo = str(total_bruto_cargo).replace('.', ',')  # substitui o ponto por vírgula
                     descricao += f"CARGO: {baseinfocontratos.cargo} - QTD HS: {round(Decimal(str(quantidade_hora)), 2)}- VALOR HORA: R${baseinfocontratos.valor_hora} TOTAL BRUTO CARGO: R$ {total_bruto_cargo}|"
             descricao += f"||TOTAL A FATURAR: R$ {format(total_a_faturar_nota, '.2f').replace('.', ',')}|BASE PARA RETENCOES:|RETENCAO CONFORME LEI 10833/03 - PIS: 0,0065: R$ {format(round(base_pis, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 10833/03 - CONFINS: 0,03: R$ {format(round(base_confins, 2), '2f').replace('.', ',')}|INSS RETENCAO: 0,11: R$ {format(round(base_inss, 2), '2f').replace('.', ',')}|I.R. RETENCAO: 0,048: R$ {format(round(base_ir, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 10833/03 - CSLL: 0,01: R$ {format(round(base_cssl, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 116/03 - ISS: {format(round(nota.cnpj_da_nota.iss, 2), '2f').replace('.', ',')}: R${format(round(base_iss, 2), '2f').replace('.', ',')}|TOTAL LIQUIDO A RECEBER: R$ {format(total_liquido_descricao, '.2f').replace('.', ',')}|"
@@ -675,7 +695,7 @@ def generate_csv(request):
                 baseinfocontratos = getattr(nota, baseinfocontratos_field)
                 quantidade_hora = getattr(nota, quantidade_hora_field)
                 if baseinfocontratos and quantidade_hora:
-                    total_bruto_cargo = round(baseinfocontratos.valor_hora * Decimal(str(quantidade_hora)), 2)
+                    total_bruto_cargo = truncate_decimal(baseinfocontratos.valor_hora * Decimal(str(quantidade_hora)), 2)
                     total_bruto_cargo = str(total_bruto_cargo).replace('.', ',')  # substitui o ponto por vírgula
                     descricao += f"CARGO: {baseinfocontratos.cargo} - QTD HS: {round(Decimal(str(quantidade_hora)), 2)}- VALOR HORA: R${baseinfocontratos.valor_hora} TOTAL BRUTO CARGO: R$ {total_bruto_cargo}|"
             descricao += f"||TOTAL A FATURAR: R$ {format(total_a_faturar_nota, '.2f').replace('.', ',')}|BASE PARA RETENCOES:|RETENCAO CONFORME LEI 10833/03 - PIS: 0,0065: R$ {format(round(base_pis, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 10833/03 - CONFINS: 0,03: R$ {format(round(base_confins, 2), '2f').replace('.', ',')}|INSS RETENCAO: 0,11: R$ {format(round(base_inss, 2), '2f').replace('.', ',')}|I.R. RETENCAO: 0,048: R$ {format(round(base_ir, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 10833/03 - CSLL: 0,01: R$ {format(round(base_cssl, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 116/03 - ISS: {format(round(nota.cnpj_da_nota.iss, 2), '2f').replace('.', ',')}: R${format(round(base_iss, 2), '2f').replace('.', ',')}|TOTAL LIQUIDO A RECEBER: R$ {format(total_liquido_descricao, '.2f').replace('.', ',')}|"
@@ -687,7 +707,7 @@ def generate_csv(request):
                 baseinfocontratos = getattr(nota, baseinfocontratos_field)
                 quantidade_hora = getattr(nota, quantidade_hora_field)
                 if baseinfocontratos and quantidade_hora:
-                    total_bruto_cargo = round(baseinfocontratos.valor_hora * Decimal(str(quantidade_hora)), 2)
+                    total_bruto_cargo = truncate_decimal(baseinfocontratos.valor_hora * Decimal(str(quantidade_hora)), 2)
                     total_bruto_cargo = str(total_bruto_cargo).replace('.', ',')  # substitui o ponto por vírgula
                     descricao += f"CARGO: {baseinfocontratos.cargo} - QTD HS: {round(Decimal(str(quantidade_hora)), 2)}- VALOR HORA: R${baseinfocontratos.valor_hora} TOTAL BRUTO CARGO: R$ {total_bruto_cargo}|"
             descricao += f"||TOTAL A FATURAR: R$ {format(total_a_faturar_nota, '.2f').replace('.', ',')}|BASE PARA RETENCOES:|RETENCAO CONFORME LEI 10833/03 - PIS: 0,0065: R$ {format(round(base_pis, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 10833/03 - CONFINS: 0,03: R$ {format(round(base_confins, 2), '2f').replace('.', ',')}|INSS RETENCAO: 0,11: R$ {format(round(base_inss, 2), '2f').replace('.', ',')}|I.R. RETENCAO: 0,048: R$ {format(round(base_ir, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 10833/03 - CSLL: 0,01: R$ {format(round(base_cssl, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 116/03 - ISS: {format(round(nota.cnpj_da_nota.iss, 2), '2f').replace('.', ',')}: R${format(round(base_iss, 2), '2f').replace('.', ',')}|TOTAL LIQUIDO A RECEBER: R$ {format(total_liquido_descricao, '.2f').replace('.', ',')}|"
@@ -706,7 +726,7 @@ def generate_csv(request):
                 baseinfocontratos = getattr(nota, baseinfocontratos_field)
                 quantidade_hora = getattr(nota, quantidade_hora_field)
                 if baseinfocontratos and quantidade_hora:
-                    total_bruto_cargo = round(baseinfocontratos.valor_hora * Decimal(str(quantidade_hora)), 2)
+                    total_bruto_cargo = truncate_decimal(baseinfocontratos.valor_hora * Decimal(str(quantidade_hora)), 2)
                     total_bruto_cargo_ans = round(total_bruto_cargo - (total_bruto_cargo * Decimal(str(nota.porcentagem_ans))), 2)
                     total_bruto_cargo_ans = str(total_bruto_cargo_ans).replace('.', ',')  # substitui o ponto por vírgula
                     descricao += f"CARGO: {baseinfocontratos.cargo} QTD HS: {round(Decimal(str(quantidade_hora)), 2)} VALOR HORA: R${baseinfocontratos.valor_hora} TOTAL BRUTO CARGO COM DESC: R$ {total_bruto_cargo_ans}|"
@@ -900,7 +920,7 @@ def generate_csv_for_nota(request, pk):
                 baseinfocontratos = getattr(nota, baseinfocontratos_field)
                 quantidade_hora = getattr(nota, quantidade_hora_field)
                 if baseinfocontratos and quantidade_hora:
-                    total_bruto_cargo = round(baseinfocontratos.valor_hora * Decimal(str(quantidade_hora)), 2)
+                    total_bruto_cargo = truncate_decimal(baseinfocontratos.valor_hora * Decimal(str(quantidade_hora)), 2)
                     total_bruto_cargo = str(total_bruto_cargo).replace('.', ',')  # substitui o ponto por vírgula
                     descricao += f"CARGO: {baseinfocontratos.cargo} - QTD HS: {round(Decimal(str(quantidade_hora)), 2)}- VALOR HORA: R${baseinfocontratos.valor_hora} TOTAL BRUTO CARGO: R$ {total_bruto_cargo}|"
             descricao += f"||TOTAL A FATURAR: R$ {format(total_a_faturar_nota, '.2f').replace('.', ',')}|BASE PARA RETENCOES:|RETENCAO CONFORME LEI 10833/03 - PIS: 0,0065: R$ {format(round(base_pis, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 10833/03 - CONFINS: 0,03: R$ {format(round(base_confins, 2), '2f').replace('.', ',')}|INSS RETENCAO: 0,11: R$ {format(round(base_inss, 2), '2f').replace('.', ',')}|I.R. RETENCAO: 0,048: R$ {format(round(base_ir, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 10833/03 - CSLL: 0,01: R$ {format(round(base_cssl, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 116/03 - ISS: {format(round(nota.cnpj_da_nota.iss, 2), '2f').replace('.', ',')}: R${format(round(base_iss, 2), '2f').replace('.', ',')}|TOTAL LIQUIDO A RECEBER: R$ {format(total_liquido_descricao, '.2f').replace('.', ',')}|"
@@ -912,7 +932,7 @@ def generate_csv_for_nota(request, pk):
                 baseinfocontratos = getattr(nota, baseinfocontratos_field)
                 quantidade_hora = getattr(nota, quantidade_hora_field)
                 if baseinfocontratos and quantidade_hora:
-                    total_bruto_cargo = round(baseinfocontratos.valor_hora * Decimal(str(quantidade_hora)), 2)
+                    total_bruto_cargo = truncate_decimal(baseinfocontratos.valor_hora * Decimal(str(quantidade_hora)), 2)
                     total_bruto_cargo = str(total_bruto_cargo).replace('.', ',')  # substitui o ponto por vírgula
                     descricao += f"CARGO: {baseinfocontratos.cargo} - QTD HS: {round(Decimal(str(quantidade_hora)), 2)}- VALOR HORA: R${baseinfocontratos.valor_hora}|TOTAL BRUTO CARGO: R$ {total_bruto_cargo}| TX ADM / Lucro: {nota.cnpj_da_nota.tx_adm}% - R$ {base_txadm} (Base ISS)|"
             descricao += f"||TOTAL A FATURAR: R$ {format(total_a_faturar_nota, '.2f').replace('.', ',')}|BASE PARA RETENCOES:|RETENCAO CONFORME LEI 10833/03 - PIS: 0,0065: R$ {format(round(base_pis, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 10833/03 - CONFINS: 0,03: R$ {format(round(base_confins, 2), '2f').replace('.', ',')}|INSS RETENCAO: 0,11: R$ {format(round(base_inss, 2), '2f').replace('.', ',')}|I.R. RETENCAO: 0,048: R$ {format(round(base_ir, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 10833/03 - CSLL: 0,01: R$ {format(round(base_cssl, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 116/03 - ISS: {format(round(nota.cnpj_da_nota.iss, 2), '2f').replace('.', ',')}: R${format(round(base_iss, 2), '2f').replace('.', ',')}|TOTAL LIQUIDO A RECEBER: R$ {format(total_liquido_descricao, '.2f').replace('.', ',')}|"
@@ -926,7 +946,7 @@ def generate_csv_for_nota(request, pk):
                 baseinfocontratos = getattr(nota, baseinfocontratos_field)
                 quantidade_hora = getattr(nota, quantidade_hora_field)
                 if baseinfocontratos and quantidade_hora:
-                    total_bruto_cargo = round(baseinfocontratos.valor_hora * Decimal(str(quantidade_hora)), 2)
+                    total_bruto_cargo = truncate_decimal(baseinfocontratos.valor_hora * Decimal(str(quantidade_hora)), 2)
                     total_bruto_cargo = str(total_bruto_cargo).replace('.', ',')  # substitui o ponto por vírgula
                     descricao += f"CARGO: {baseinfocontratos.cargo} - QTD HS: {round(Decimal(str(quantidade_hora)), 2)}- VALOR HORA: R${baseinfocontratos.valor_hora} TOTAL BRUTO CARGO: R$ {total_bruto_cargo}|"
             descricao += f"||TOTAL A FATURAR: R$ {format(total_a_faturar_nota, '.2f').replace('.', ',')}|BASE PARA RETENCOES:|RETENCAO CONFORME LEI 10833/03 - PIS: 0,0065: R$ {format(round(base_pis, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 10833/03 - CONFINS: 0,03: R$ {format(round(base_confins, 2), '2f').replace('.', ',')}|INSS RETENCAO: 0,11: R$ {format(round(base_inss, 2), '2f').replace('.', ',')}|I.R. RETENCAO: 0,048: R$ {format(round(base_ir, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 10833/03 - CSLL: 0,01: R$ {format(round(base_cssl, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 116/03 - ISS: {format(round(nota.cnpj_da_nota.iss, 2), '2f').replace('.', ',')}: R${format(round(base_iss, 2), '2f').replace('.', ',')}|TOTAL LIQUIDO A RECEBER: R$ {format(total_liquido_descricao, '.2f').replace('.', ',')}|"
@@ -943,7 +963,7 @@ def generate_csv_for_nota(request, pk):
                 baseinfocontratos = getattr(nota, baseinfocontratos_field)
                 quantidade_hora = getattr(nota, quantidade_hora_field)
                 if baseinfocontratos and quantidade_hora:
-                    total_bruto_cargo = round(baseinfocontratos.valor_hora * Decimal(str(quantidade_hora)), 2)
+                    total_bruto_cargo = truncate_decimal(baseinfocontratos.valor_hora * Decimal(str(quantidade_hora)), 2)
                     total_bruto_cargo = str(total_bruto_cargo).replace('.', ',')  # substitui o ponto por vírgula
                     descricao += f"CARGO: {baseinfocontratos.cargo} - QTD HS: {round(Decimal(str(quantidade_hora)), 2)}- VALOR HORA: R${baseinfocontratos.valor_hora} TOTAL BRUTO CARGO: R$ {total_bruto_cargo}|"
             descricao += f"||TOTAL A FATURAR: R$ {format(total_a_faturar_nota, '.2f').replace('.', ',')}|BASE PARA RETENCOES:|RETENCAO CONFORME LEI 10833/03 - PIS: 0,0065: R$ {format(round(base_pis, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 10833/03 - CONFINS: 0,03: R$ {format(round(base_confins, 2), '2f').replace('.', ',')}|INSS RETENCAO: 0,11: R$ {format(round(base_inss, 2), '2f').replace('.', ',')}|I.R. RETENCAO: 0,048: R$ {format(round(base_ir, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 10833/03 - CSLL: 0,01: R$ {format(round(base_cssl, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 116/03 - ISS: {format(round(nota.cnpj_da_nota.iss, 2), '2f').replace('.', ',')}: R${format(round(base_iss, 2), '2f').replace('.', ',')}|TOTAL LIQUIDO A RECEBER: R$ {format(total_liquido_descricao, '.2f').replace('.', ',')}|"
@@ -955,7 +975,7 @@ def generate_csv_for_nota(request, pk):
                 baseinfocontratos = getattr(nota, baseinfocontratos_field)
                 quantidade_hora = getattr(nota, quantidade_hora_field)
                 if baseinfocontratos and quantidade_hora:
-                    total_bruto_cargo = round(baseinfocontratos.valor_hora * Decimal(str(quantidade_hora)), 2)
+                    total_bruto_cargo = truncate_decimal(baseinfocontratos.valor_hora * Decimal(str(quantidade_hora)), 2)
                     total_bruto_cargo = str(total_bruto_cargo).replace('.', ',')  # substitui o ponto por vírgula
                     descricao += f"CARGO: {baseinfocontratos.cargo} - QTD HS: {round(Decimal(str(quantidade_hora)), 2)}- VALOR HORA: R${baseinfocontratos.valor_hora} TOTAL BRUTO CARGO: R$ {total_bruto_cargo}|"
             descricao += f"||TOTAL A FATURAR: R$ {format(total_a_faturar_nota, '.2f').replace('.', ',')}|BASE PARA RETENCOES:|RETENCAO CONFORME LEI 10833/03 - PIS: 0,0065: R$ {format(round(base_pis, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 10833/03 - CONFINS: 0,03: R$ {format(round(base_confins, 2), '2f').replace('.', ',')}|INSS RETENCAO: 0,11: R$ {format(round(base_inss, 2), '2f').replace('.', ',')}|I.R. RETENCAO: 0,048: R$ {format(round(base_ir, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 10833/03 - CSLL: 0,01: R$ {format(round(base_cssl, 2), '2f').replace('.', ',')}|RETENCAO CONFORME LEI 116/03 - ISS: {format(round(nota.cnpj_da_nota.iss, 2), '2f').replace('.', ',')}: R${format(round(base_iss, 2), '2f').replace('.', ',')}|TOTAL LIQUIDO A RECEBER: R$ {format(total_liquido_descricao, '.2f').replace('.', ',')}|"
@@ -974,7 +994,7 @@ def generate_csv_for_nota(request, pk):
                 baseinfocontratos = getattr(nota, baseinfocontratos_field)
                 quantidade_hora = getattr(nota, quantidade_hora_field)
                 if baseinfocontratos and quantidade_hora:
-                    total_bruto_cargo = round(baseinfocontratos.valor_hora * Decimal(str(quantidade_hora)), 2)
+                    total_bruto_cargo = truncate_decimal(baseinfocontratos.valor_hora * Decimal(str(quantidade_hora)), 2)
                     total_bruto_cargo_ans = round(total_bruto_cargo - (total_bruto_cargo * Decimal(str(nota.porcentagem_ans))), 2)
                     total_bruto_cargo_ans = str(total_bruto_cargo_ans).replace('.', ',')  # substitui o ponto por vírgula
                     descricao += f"CARGO: {baseinfocontratos.cargo} QTD HS: {round(Decimal(str(quantidade_hora)), 2)} VALOR HORA: R${baseinfocontratos.valor_hora} TOTAL BRUTO CARGO COM DESC: R$ {total_bruto_cargo_ans}|"

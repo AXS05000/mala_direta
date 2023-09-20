@@ -50,3 +50,5 @@ def import_basecnpj_from_excel(file_path):
             tipo_de_cliente=data['Tipo de Cliente'],
             tx_adm=data['taxa Adm']
         )
+
+
