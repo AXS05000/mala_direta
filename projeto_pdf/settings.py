@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-vlg4fjvkt7y*&)q@0bnhfe!tygcq#t31lem3uu$m3f5w95=pt7'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['go2b-bi.com.br', 'www.go2b-bi.com.br']
 
@@ -148,7 +148,7 @@ AUTH_USER_MODEL = 'usuarios.CustomUsuario'
 LOGIN_REDIRECT_URL = 'index'
 LOGOUT_REDIRECT_URL = 'login'
 LOGIN_URL = 'login'
-SESSION_COOKIE_AGE = 604800  # 1 semana
+""" SESSION_COOKIE_AGE = 604800  # 1 semana
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SECURE = True
 
@@ -161,7 +161,7 @@ CSRF_COOKIE_SECURE = True
 CSRF_COOKIE_HTTPNLY = True
 X_FRAME_OPTIONS = 'DENY'
 
-SECURE_SSL_REDIRECT = True
+SECURE_SSL_REDIRECT = True """
 
 
 
