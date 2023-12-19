@@ -25,9 +25,9 @@ SECRET_KEY = 'django-insecure-vlg4fjvkt7y*&)q@0bnhfe!tygcq#t31lem3uu$m3f5w95=pt7
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['go2b-bi.com.br', 'www.go2b-bi.com.br']
+#ALLOWED_HOSTS = ['go2b-bi.com.br', 'www.go2b-bi.com.br']
 
-#ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
